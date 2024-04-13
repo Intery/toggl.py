@@ -26,7 +26,7 @@ class AccountsRoute(Route):
     BASE = 'https://accounts.toggl.com/api/'
 
 
-class TogglHTTPClient:
+class TrackHTTPClient:
     """
     Static interface to the v9 Toggl Track restful API.
     """
@@ -56,9 +56,6 @@ class TogglHTTPClient:
         if 'params' in kwargs:
             kwargs['params'] = {key: json.dumps(obj) for key, obj in kwargs['params'].items()}
 
-        # Whether to refresh the session cookie and retry the request
-        retry = False
-
         await self._lock.acquire()
         with slow_lock(self._lock, self.loop, 1):
             headers = {
@@ -84,17 +81,10 @@ class TogglHTTPClient:
                 if 300 > resp.status >= 200:
                     # Okay response, parse and return
                     return json.loads(text)
-                elif resp.status == 401 and not static:
-                    retry = True
                 elif resp.status == 402:
                     raise PaymentRequired(resp, text)
                 else:
                     raise HTTPException(resp, text)
-
-        if retry:
-            # await self._login_cookie()
-            # return await self.request(route, static, **kwargs)
-            pass
 
     async def login(self, APIKey=None, username=None, password=None):
         if self.session and not self.session.closed:
@@ -110,11 +100,16 @@ class TogglHTTPClient:
 
         self.authHeader = "Basic " + b64encode(auth.encode()).decode("ascii").rstrip()
 
-        # Log in and get session cookie
-        # On hold awaiting info about whether the v9 API supports session cookies with the token
-        # await self._login_cookie()
+        # 'Log in' by getting the user profile
+        return await self.get_my_profile()
 
     async def _login_cookie(self):
+        """
+        Authenticate and obtain a session cookie with the API.
+
+        NOTE: This is now defunct in the v9 API
+        since we can no longer get a session cookie with an api token.
+        """
         try:
             await self.request(
                 AccountsRoute('POST', 'sessions'),
@@ -126,7 +121,6 @@ class TogglHTTPClient:
                 raise LoginFailure("Improper credentials passed")
             else:
                 raise
-        ...
 
     # --------------------
     # Me Chapter

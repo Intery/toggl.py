@@ -6,7 +6,7 @@ import toml
 from .context import toggl_track
 
 from toggl_track.errors import HTTPException, LoginFailure
-from toggl_track.http import TogglHTTPClient
+from toggl_track.http import TrackHTTPClient
 
 # Move to model tests
 from toggl_track.models import Tag, Project
@@ -15,7 +15,7 @@ async def login(apikey: str):
     logging.info("Testing HTTPClient login with APIKey")
 
     logging.info("Initialising Client")
-    client = TogglHTTPClient()
+    client = TrackHTTPClient()
 
     logging.info("Logging In")
     try:
@@ -38,7 +38,7 @@ async def login(apikey: str):
     return client
 
 
-async def test_my_endpoints(client: TogglHTTPClient):
+async def test_my_endpoints(client: TrackHTTPClient):
     logging.info("Testing /me endpoints.")
 
     # logging.info("Requesting Projects.")
@@ -50,7 +50,7 @@ async def test_my_endpoints(client: TogglHTTPClient):
     logging.info("Testing /me endpoints complete.")
 
 
-async def test_tags_static(client: TogglHTTPClient):
+async def test_tags_static(client: TrackHTTPClient):
     logging.info("Testing static object loading.")
 
     # logging.info("Testing Tags")
@@ -87,5 +87,3 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-
-

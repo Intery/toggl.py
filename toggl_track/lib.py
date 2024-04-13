@@ -1,4 +1,4 @@
-
+import datetime as dt
 from contextlib import contextmanager
 
 
@@ -12,3 +12,12 @@ def slow_lock(lock, loop, delta):
         yield lock
     finally:
         loop.call_later(delta, lock.release)
+
+
+def utc_now():
+    """
+    Return the current datetime localised to utc.
+    """
+    ts = dt.datetime.utcnow()
+    ts.replace(tzinfo=dt.timezone.utc)
+    return ts
