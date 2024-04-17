@@ -14,6 +14,10 @@ class HTTPException(TogglException):
         super().__init__(error)
 
 
+class NotFound(HTTPException):
+    pass
+
+
 class LoginFailure(TogglException):
     """
     Thrown when client login fails, usually due to invalid credentials.

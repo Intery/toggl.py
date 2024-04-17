@@ -6,7 +6,7 @@ from typing import Optional
 
 from base64 import b64encode
 
-from .errors import HTTPException, LoginFailure, PaymentRequired
+from .errors import HTTPException, LoginFailure, NotFound, PaymentRequired
 from .lib import slow_lock
 
 
@@ -83,6 +83,8 @@ class TrackHTTPClient:
                     return json.loads(text)
                 elif resp.status == 402:
                     raise PaymentRequired(resp, text)
+                elif resp.status == 404:
+                    raise NotFound(resp, text)
                 else:
                     raise HTTPException(resp, text)
 
@@ -188,6 +190,8 @@ class TrackHTTPClient:
     # Get my time entries
 
     # Get current time entry
+    async def get_current_entry(self):
+        return await self.request(Route('GET', 'me/time_entries/current'))
 
     # Get my time entry by id
 

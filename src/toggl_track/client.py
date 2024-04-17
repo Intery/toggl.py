@@ -1,7 +1,11 @@
 from typing import Optional
+
+from toggl_track.errors import NotFound
 from .http import TrackHTTPClient
 from .state import TrackState
 from . import models
+
+from .models import TimeEntry
 
 
 class TrackClient:
@@ -21,6 +25,12 @@ class TrackClient:
         if self.profile is None:
             raise ValueError("No default workspace before login.")
         return self.state.get_workspace(self.profile.default_workspace_id)
+
+    async def close(self):
+        await self.http.close()
+        del self.state
+        self.state = TrackState()
+        self.profile = None
 
     async def login(self, *args, **kwargs):
         profile_data = await self.http.login(**kwargs)
@@ -58,3 +68,11 @@ class TrackClient:
             state.add_entry(entry)
 
         self.state = state
+
+    async def fetch_current_entry(self) -> Optional[TimeEntry]:
+        try:
+            data = await self.http.get_current_entry()
+            entry = TimeEntry.from_data(data, self.state)
+        except NotFound:
+            entry = None
+        return entry
