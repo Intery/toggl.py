@@ -83,6 +83,8 @@ class TrackHTTPClient:
                     return json.loads(text)
                 elif resp.status == 402:
                     raise PaymentRequired(resp, text)
+                elif resp.status == 403:
+                    raise LoginFailure
                 elif resp.status == 404:
                     raise NotFound(resp, text)
                 else:

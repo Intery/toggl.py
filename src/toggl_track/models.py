@@ -301,6 +301,12 @@ class TimeEntry(TrackModel, _Workspaced):
     tag_ids: list[int] = Factory(list)
     tags: list[str] = Factory(list)
 
+    server_deleted_at: Optional[dt.datetime] = field(**opt_dt_field_args)
+
+    @property
+    def deleted(self):
+        return (self.server_deleted_at is not None)
+
     # Workspace id
     workspace_id: int = field(validator=validators.instance_of(int))
 
@@ -316,6 +322,8 @@ class Workspace(TrackModel):
     # Workspace ID
     id: int = field(validator=validators.instance_of(int))
 
+    name: str
+
 
 # User profile
 @define(kw_only=True)
@@ -327,9 +335,29 @@ class Profile(TrackModel):
 
     default_workspace_id: int
 
+    @property
+    def default_workspace(self):
+        if self.state is None:
+            raise ValueError(f"Cannot fetch default workspace on stateless {self.__class__.__name__}")
+        if self.default_workspace_id is None:
+            return None
+        return self.state.get_workspace(self.default_workspace_id)
+
     timezone: str
 
     updated_at: dt.datetime = field(**dt_field_args)
+
+    beginning_of_week: int
+
+    country_id: int
+
+    created_at: dt.datetime = field(**dt_field_args)
+
+    fullname: str
+
+    image_url: str
+
+    email: str
 
 
 # Client

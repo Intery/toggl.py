@@ -33,7 +33,7 @@ class TrackClient:
         self.profile = None
 
     async def login(self, *args, **kwargs):
-        profile_data = await self.http.login(**kwargs)
+        profile_data = await self.http.login(*args, **kwargs)
         self.profile = models.Profile.from_data(profile_data, state=self.state)
 
     async def sync(self, flush=True):
@@ -73,6 +73,7 @@ class TrackClient:
         try:
             data = await self.http.get_current_entry()
             entry = TimeEntry.from_data(data, self.state)
+            self.state.add_entry(entry)
         except NotFound:
             entry = None
         return entry
