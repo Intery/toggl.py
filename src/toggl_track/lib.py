@@ -18,6 +18,5 @@ def utc_now():
     """
     Return the current datetime localised to utc.
     """
-    ts = dt.datetime.utcnow()
-    ts.replace(tzinfo=dt.timezone.utc)
+    ts = dt.datetime.now(dt.timezone.utc)
     return ts

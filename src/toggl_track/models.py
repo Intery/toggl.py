@@ -267,14 +267,14 @@ class TimeEntry(TrackModel, _Workspaced):
 
     @property
     def actual_duration(self):
-        if self.running:
+        if not self.running:
             return self.duration
         else:
             return (utc_now() - self.start).total_seconds()
 
     @property
     def running(self):
-        return (self.duration > 0)
+        return (self.duration < 0) or (self.stop is None)
 
     # Time Entry ID
     id: int = field(validator=validators.instance_of(int))
@@ -323,6 +323,12 @@ class Workspace(TrackModel):
     id: int = field(validator=validators.instance_of(int))
 
     name: str
+
+    @property
+    def entries(self):
+        if not self.state:
+            raise ValueError("Cannot get entries for stateless Workspace.")
+        return [self.state.get_entry(eid) for eid in self.state.workspace_entries[self.id]]
 
 
 # User profile
