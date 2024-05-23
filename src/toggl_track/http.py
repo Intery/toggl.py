@@ -9,6 +9,8 @@ from base64 import b64encode
 from .errors import HTTPException, LoginFailure, NotFound, PaymentRequired
 from .lib import slow_lock
 
+logger = logging.getLogger(__name__)
+
 
 class Route:
     BASE = 'https://api.track.toggl.com/api/v9/'
@@ -68,14 +70,14 @@ class TrackHTTPClient:
             if data is not None:
                 kwargs['data'] = json.dumps(data)
 
-            logging.debug(
+            logger.debug(
                 f"Sending {route.method} request to {route.url}."
             )
 
             async with self.session.request(route.method, route.url, headers=headers, **kwargs) as resp:
                 text = await resp.text(encoding='utf-8')
 
-                logging.debug(
+                logger.debug(
                     f"{route.url} response {resp.status}: {text}"
                 )
                 if 300 > resp.status >= 200:
