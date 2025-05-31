@@ -3,10 +3,18 @@ from typing import Any, Optional, TYPE_CHECKING
 
 from attrs import define, field, Factory, validators, converters, NOTHING
 
+from . import lib_logger
 from .lib import utc_now
 
 if TYPE_CHECKING:
     from .state import TrackState
+
+
+"""
+TODO:
+    Should these have references back to the client or http?
+    Makes sense to be able to e.g. stop a time entry or delete or edit a project.
+"""
 
 
 # Custom converters and validators
@@ -68,6 +76,18 @@ class TrackModel:
     def update_data(self, payload):
         raise NotImplementedError
 
+    @staticmethod
+    def requries_state(coro):
+        """
+        Wrapper to ensure a TrackModel subclass coroutine is run with set state.
+        """
+        async def wrapper(self, *args, **kwargs):
+            if self.state is None:
+                raise ValueError(f"{coro.__name__} must be run in a stateful model.")
+            return await coro(self, *args, **kwargs)
+        return wrapper
+
+
 
 class _Workspaced:
     state: Optional['TrackClient']
@@ -98,7 +118,7 @@ class Tag(TrackModel, _Workspaced):
     workspace_id: int = field(validator=validators.instance_of(int))
 
     # Undocumented
-    permissions: Optional[str] = field()
+    permissions: Optional[str] = field(default=None)
 
     # When the tag was deleted if applicable.
     deleted_at: Optional[dt.datetime] = field(**opt_dt_field_args)
@@ -302,6 +322,36 @@ class TimeEntry(TrackModel, _Workspaced):
     tags: list[str] = Factory(list)
 
     server_deleted_at: Optional[dt.datetime] = field(**opt_dt_field_args)
+
+    @TrackModel.requries_state
+    async def stop_entry(self):
+        assert self.state is not None
+        if self.stop is not None:
+            raise ValueError("Cannot stop something which is not moving!")
+
+        lib_logger.debug(f"Stopping entry: {self!r}")
+        entry_data = await self.state.http.stop_entry(self.workspace_id, self.id)
+        return self.state.add_entry_data(entry_data)
+
+    @TrackModel.requries_state
+    async def continue_entry(self, **override_kwargs):
+        assert self.state is not None
+        if self.running:
+            raise ValueError("Cannot continue an entry which is not stopped!")
+
+        create_args = {}
+        create_args['description'] = self.description
+        create_args['start'] = utc_now().isoformat()
+        create_args['duration'] = -1
+        if self.project_id:
+            create_args['project_id'] = self.project_id
+        if self.tag_ids:
+            create_args['tag_ids'] = self.tag_ids
+        create_args.update(override_kwargs)
+
+        lib_logger.debug(f"Continuing entry: {self!r}")
+        entry_data = await self.state.http.create_time_entry(self.workspace_id, **create_args)
+        return self.state.add_entry_data(entry_data)
 
     @property
     def deleted(self):

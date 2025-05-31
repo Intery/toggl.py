@@ -200,6 +200,15 @@ class TrackHTTPClient:
     # Get my time entry by id
 
     # Create a new workspace time entry
+    async def create_time_entry(self, workspace_id, meta=None, **kwargs):
+        payload = kwargs
+        payload.setdefault("created_with", self.user_agent)
+        payload['workspace_id'] = workspace_id
+        params = {'workspace_id': workspace_id}
+        route = Route('POST', 'workspaces/{workspace_id}/time_entries', **params)
+        query = {'meta': meta} if meta is not None else {}
+        return await self.request(route, data=payload, params=query)
+
 
     # Bulk edit workspace time entries 
 
@@ -208,6 +217,15 @@ class TrackHTTPClient:
     # Delete a workspace time entry 
 
     # Stop a ws time entry 
+    async def stop_entry(self, workspace_id, time_entry_id):
+        params = {
+            'workspace_id': workspace_id,
+            'time_entry_id': time_entry_id,
+        }
+        return await self.request(
+            Route('PATCH', 'workspaces/{workspace_id}/time_entries/{time_entry_id}/stop', **params)
+        )
+
 
     # --------------------
     # Organizations Chapter
